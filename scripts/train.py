@@ -14,26 +14,37 @@ from torchvision.models import ResNet18_Weights
 from kineo_tamarisk.model.classifier import TamariskClassifier
 
 
-def build_train_transforms(image_size: int) -> transforms.Compose:
+def _imagenet_mean_std() -> tuple[tuple[float, float, float], tuple[float, float, float]]:
     weights = ResNet18_Weights.DEFAULT
+    mean = (0.485, 0.456, 0.406)
+    std = (0.229, 0.224, 0.225)
+    meta = getattr(weights, "meta", {})
+    if isinstance(meta, dict):
+        mean = tuple(meta.get("mean", mean))
+        std = tuple(meta.get("std", std))
+    return mean, std
+
+
+def build_train_transforms(image_size: int) -> transforms.Compose:
+    mean, std = _imagenet_mean_std()
     return transforms.Compose(
         [
             transforms.RandomResizedCrop(image_size),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize(mean=weights.meta["mean"], std=weights.meta["std"]),
+            transforms.Normalize(mean=mean, std=std),
         ]
     )
 
 
 def build_eval_transforms(image_size: int) -> transforms.Compose:
-    weights = ResNet18_Weights.DEFAULT
+    mean, std = _imagenet_mean_std()
     return transforms.Compose(
         [
             transforms.Resize(image_size),
             transforms.CenterCrop(image_size),
             transforms.ToTensor(),
-            transforms.Normalize(mean=weights.meta["mean"], std=weights.meta["std"]),
+            transforms.Normalize(mean=mean, std=std),
         ]
     )
 

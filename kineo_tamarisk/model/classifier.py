@@ -24,12 +24,25 @@ def default_transforms(image_size: int = 224) -> transforms.Compose:
     """Build inference transforms aligned with the ResNet18 ImageNet recipe."""
 
     weights = ResNet18_Weights.DEFAULT
+    try:
+        if image_size == 224:
+            return weights.transforms()
+    except Exception:
+        pass
+
+    mean = (0.485, 0.456, 0.406)
+    std = (0.229, 0.224, 0.225)
+    meta = getattr(weights, "meta", {})
+    if isinstance(meta, dict):
+        mean = tuple(meta.get("mean", mean))
+        std = tuple(meta.get("std", std))
+
     return transforms.Compose(
         [
             transforms.Resize(image_size),
             transforms.CenterCrop(image_size),
             transforms.ToTensor(),
-            transforms.Normalize(mean=weights.meta["mean"], std=weights.meta["std"]),
+            transforms.Normalize(mean=mean, std=std),
         ]
     )
 
