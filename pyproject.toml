@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=67", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.21.0"]
+build-backend = "hatchling.build"
 
 [project]
 name = "kineo_tamarisk"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Image-based salt cedar (tamarisk) identification."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -35,9 +35,14 @@ dev = ["pytest>=7.0"]
 [project.scripts]
 kineo-tamarisk-infer = "kineo_tamarisk.cli.main:main"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["kineo_tamarisk*"]
+[tool.hatch.version]
+path = "kineo_tamarisk/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["kineo_tamarisk"]
+
+[tool.hatch.envs.default]
+dependencies = ["pytest>=7.0"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

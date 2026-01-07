@@ -17,10 +17,11 @@ monitoring.
 pip3 install kineo_tamarisk
 ```
 
-For development:
+For development (Hatch):
 
 ```bash
-pip3 install -e .[dev]
+hatch env create
+hatch run pytest
 ```
 
 ## Quick Start
@@ -86,7 +87,7 @@ label for evaluation.
 ## Testing
 
 ```bash
-pytest
+hatch run pytest
 ```
 
 ## License
