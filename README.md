@@ -61,6 +61,12 @@ For JSON output:
 kineo-tamarisk-infer --json image1.jpg
 ```
 
+Example with Hatch and a trained checkpoint:
+
+```bash
+hatch run kineo-tamarisk-infer --weights tamarisk.pt ./my_dataset/val/tamarisk/winter_tamarisk.jpeg
+```
+
 ## Training
 
 The training script expects an ImageFolder-style directory layout. Use `train/` and optional `val/`:
