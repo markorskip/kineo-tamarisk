@@ -100,6 +100,19 @@ If you see a missing `torch` error inside Hatch, reinstall dependencies:
 hatch run python -m pip install torch torchvision
 ```
 
+Training metrics are logged to `logs/train_metrics.csv` by default. If TensorBoard is installed,
+logs are also written to `logs/tensorboard`. To enable TensorBoard in a Hatch environment:
+
+```bash
+hatch run python -m pip install tensorboard
+```
+
+Then start TensorBoard:
+
+```bash
+tensorboard --logdir logs/tensorboard
+```
+
 If your dataset includes a `tamarisk` class name, the training script treats it as the positive
 label for evaluation.
 

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import csv
 from pathlib import Path
+from typing import TextIO
 
 import torch
 from torch import nn
@@ -47,6 +49,28 @@ def build_eval_transforms(image_size: int) -> transforms.Compose:
             transforms.Normalize(mean=mean, std=std),
         ]
     )
+
+
+def _init_csv_logger(log_dir: Path) -> tuple[Path, csv.DictWriter, TextIO]:
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / "train_metrics.csv"
+    is_new = not log_path.exists()
+    log_file = log_path.open("a", newline="")
+    writer = csv.DictWriter(log_file, fieldnames=["epoch", "train_loss", "val_acc"])
+    if is_new:
+        writer.writeheader()
+    return log_path, writer, log_file
+
+
+def _init_tensorboard_logger(log_dir: Path, enabled: bool):
+    if not enabled:
+        return None
+    try:
+        from torch.utils.tensorboard import SummaryWriter
+    except Exception:
+        print("TensorBoard not available; install 'tensorboard' to enable logging.")
+        return None
+    return SummaryWriter(log_dir=str(log_dir / "tensorboard"))
 
 
 def build_loaders(data_dir: Path, image_size: int, batch_size: int, num_workers: int):
@@ -127,6 +151,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Fine-tune tamarisk classifier.")
     parser.add_argument("--data-dir", type=Path, required=True, help="Dataset root folder.")
     parser.add_argument("--output", type=Path, default=Path("tamarisk.pt"))
+    parser.add_argument("--log-dir", type=Path, default=Path("logs"))
     parser.add_argument("--epochs", type=int, default=5)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--lr", type=float, default=1e-4)
@@ -134,6 +159,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--num-workers", type=int, default=2)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--no-pretrained", action="store_true")
+    parser.add_argument("--no-tensorboard", action="store_true")
     return parser
 
 
@@ -158,15 +184,37 @@ def main() -> None:
     criterion = nn.BCEWithLogitsLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
 
-    for epoch in range(1, args.epochs + 1):
-        train_loss = train_one_epoch(
-            model, train_loader, optimizer, criterion, device, positive_index
-        )
-        if val_loader is not None:
-            val_acc = evaluate(model, val_loader, device, positive_index)
-            print(f"Epoch {epoch}/{args.epochs} - loss: {train_loss:.4f} - val_acc: {val_acc:.4f}")
-        else:
-            print(f"Epoch {epoch}/{args.epochs} - loss: {train_loss:.4f}")
+    log_path, csv_writer, csv_file = _init_csv_logger(args.log_dir)
+    tb_writer = _init_tensorboard_logger(args.log_dir, enabled=not args.no_tensorboard)
+
+    try:
+        for epoch in range(1, args.epochs + 1):
+            train_loss = train_one_epoch(
+                model, train_loader, optimizer, criterion, device, positive_index
+            )
+            val_acc = None
+            if val_loader is not None:
+                val_acc = evaluate(model, val_loader, device, positive_index)
+                print(
+                    f"Epoch {epoch}/{args.epochs} - loss: {train_loss:.4f} - val_acc: {val_acc:.4f}"
+                )
+            else:
+                print(f"Epoch {epoch}/{args.epochs} - loss: {train_loss:.4f}")
+
+            csv_writer.writerow(
+                {"epoch": epoch, "train_loss": f"{train_loss:.6f}", "val_acc": val_acc}
+            )
+            csv_file.flush()
+            if tb_writer is not None:
+                tb_writer.add_scalar("loss/train", train_loss, epoch)
+                if val_acc is not None:
+                    tb_writer.add_scalar("metrics/val_acc", val_acc, epoch)
+    finally:
+        if tb_writer is not None:
+            tb_writer.close()
+        csv_file.close()
+
+    print(f"Saved metrics to {log_path}")
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     torch.save(

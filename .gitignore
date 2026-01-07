@@ -16,6 +16,10 @@ dist/
 # Tests
 .pytest_cache/
 
+# Training logs
+logs/
+runs/
+
 # IDEs
 .vscode/
 .idea/
