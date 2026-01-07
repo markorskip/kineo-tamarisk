@@ -81,6 +81,19 @@ Run fine-tuning:
 python scripts/train.py --data-dir my_dataset --output checkpoints/tamarisk.pt
 ```
 
+Run fine-tuning with Hatch:
+
+```bash
+hatch env create
+hatch run python scripts/train.py --data-dir my_dataset --output checkpoints/tamarisk.pt
+```
+
+If you see a missing `torch` error inside Hatch, reinstall dependencies:
+
+```bash
+hatch run python -m pip install torch torchvision
+```
+
 If your dataset includes a `tamarisk` class name, the training script treats it as the positive
 label for evaluation.
 
