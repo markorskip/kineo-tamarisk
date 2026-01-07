@@ -14,13 +14,13 @@ monitoring.
 ## Installation
 
 ```bash
-pip install kineo_tamarisk
+pip3 install kineo_tamarisk
 ```
 
 For development:
 
 ```bash
-pip install -e .[dev]
+pip3 install -e .[dev]
 ```
 
 ## Quick Start
